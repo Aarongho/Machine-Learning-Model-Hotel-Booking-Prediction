@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
 
-with open('/Users/aaron/Documents/SEMESTER 4/Model Deployment/UTS/Dashboard/xgb_model.pkl', 'rb') as file:
+with open('xgb_model.pkl', 'rb') as file:
     model = pickle.load(file)
 
 meal_plan_map = {
