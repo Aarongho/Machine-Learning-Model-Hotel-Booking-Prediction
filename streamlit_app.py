@@ -40,7 +40,7 @@ st.markdown("---")
 
 @st.cache_data
 def load_data():
-    return pd.read_csv("/Users/aaron/Documents/SEMESTER 4/Model Deployment/UTS/Dataset_B_hotel.csv")
+    return pd.read_csv("Dataset_B_hotel.csv")
 
 df = load_data()
 
