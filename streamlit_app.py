@@ -1,13 +1,13 @@
-import streamlit as st
-import pandas as pd
 import pickle
+import pandas as pd
+import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import RobustScaler
+from sklearn.preprocessing import OneHotEncoder
 
-# Load the trained model, encoder, and scaler
+# Load pre-trained model, encoder, and scaler
 with open('xgb_model.pkl', 'rb') as file:
     model = pickle.load(file)
 
@@ -17,6 +17,7 @@ with open('encoder.pkl', 'rb') as file:
 with open('scaler.pkl', 'rb') as file:
     scaler = pickle.load(file)
 
+# Feature mappings for categorical features
 meal_plan_map = {
     "No Meal": 0,
     "Meal Type 1": 1,
@@ -43,6 +44,7 @@ room_type_map = {
     "Tipe 7 ": 6
 }
 
+# Streamlit UI configuration
 st.set_page_config(page_title="Prediction Cancelling Hotel", page_icon="🏨", layout="centered")
 st.markdown("<h1 style='text-align: center;'>Prediction On Cancelling Booking Hotel 🏨</h1>", unsafe_allow_html=True)
 st.markdown("---")
@@ -57,6 +59,7 @@ st.markdown("<h4 style='text-align: center;'>Here's an example of the Raw Hotel 
 with st.expander("📂 Raw Data "):
     st.dataframe(df.head(10))
 
+# User input form for prediction
 st.markdown("<h4 style='text-align: center;'>Input The Data you want to predict 🔮!</h4>", unsafe_allow_html=True)
 with st.form("booking_form"):
     st.subheader("📋 Informasi Pemesanan")
@@ -87,7 +90,6 @@ with st.form("booking_form"):
         no_of_special_requests = st.number_input("📝 Jumlah Request Khusus", min_value=0, value=0)
 
     st.markdown("")
-
     submit = st.form_submit_button("🔮 Prediksi Sekarang")
 
 if submit:
@@ -108,26 +110,16 @@ if submit:
             'avg_price_per_room', 'no_of_special_requests'
         ])
 
-        # Apply OneHotEncoder and RobustScaler to the input data
-        categorical_columns = ['meal_plan_choice', 'room_type_choice', 'market_choice']  # Adjust this list as per your dataset
-        numeric_columns = ['no_of_adults', 'no_of_children', 'no_of_weekend_nights', 'no_of_week_nights', 'lead_time', 
-                           'arrival_year', 'arrival_month', 'arrival_date', 'repeated_guest', 'no_of_previous_cancellations',
-                           'no_of_previous_bookings_not_canceled', 'avg_price_per_room', 'no_of_special_requests']  # Adjust as needed
+        # Apply encoder and scaler to the input data
+        encoded_input = encoder.transform(input_data[['meal_plan_choice', 'market_choice', 'room_type_choice']])
+        scaled_input = scaler.transform(input_data.drop(['meal_plan_choice', 'market_choice', 'room_type_choice'], axis=1))
 
-        # Apply OneHotEncoder to categorical columns
-        encoded_cat_data = encoder.transform(input_data[categorical_columns]).toarray()
-        encoded_df = pd.DataFrame(encoded_cat_data, columns=encoder.get_feature_names_out(categorical_columns))
+        # Combine encoded and scaled data
+        transformed_data = pd.concat([pd.DataFrame(encoded_input), pd.DataFrame(scaled_input)], axis=1)
 
-        # Scale numeric columns
-        scaled_num_data = scaler.transform(input_data[numeric_columns])
-        scaled_df = pd.DataFrame(scaled_num_data, columns=numeric_columns)
-
-        # Combine the scaled numeric data and encoded categorical data
-        input_data_processed = pd.concat([encoded_df, scaled_df], axis=1)
-
-        # Predict using the processed data
-        prediction = model.predict(input_data_processed)
-        prediction_prob = model.predict_proba(input_data_processed)[:, 1]
+        # Prediction
+        prediction = model.predict(transformed_data)
+        prediction_prob = model.predict_proba(transformed_data)[:, 1] 
 
         st.subheader("📝 Data Input By User")
         st.dataframe(input_data)
@@ -150,10 +142,10 @@ if submit:
 
         st.markdown("### 🧠 Feature Contribution to the Prediction")
         explainer = shap.TreeExplainer(model)
-        shap_values = explainer.shap_values(input_data_processed)
+        shap_values = explainer.shap_values(transformed_data)
 
         shap_df = pd.DataFrame({
-            'Feature': input_data_processed.columns,
+            'Feature': transformed_data.columns,
             'SHAP Value': shap_values[0]
         }).sort_values(by='SHAP Value', key=abs, ascending=False)
 
@@ -163,5 +155,10 @@ if submit:
         st.pyplot(fig2)
 
         hasil = "✅ Booking Not Canceled!" if prediction[0] == 1 else "❌ Booking Canceled!"
-        st.mark
+        st.markdown("---")
+        st.subheader("🎯 Prediction Result : ")
+        if prediction[0] == 1:
+            st.success(hasil)
+        else:
+            st.error(hasil)
 
