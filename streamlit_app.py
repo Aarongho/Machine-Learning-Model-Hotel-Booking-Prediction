@@ -80,6 +80,58 @@ if submit:
             'avg_price_per_room', 'no_of_special_requests'
         ])
 
-        #
+        # Apply encoder and scaler to the input data
+        categorical_columns = ['meal_plan_choice', 'market_choice', 'room_type_choice']
+        encoded_input = encoder.transform(input_data[categorical_columns])
 
+        # Drop the categorical columns for scaling
+        scaled_input = scaler.transform(input_data.drop(categorical_columns, axis=1))
+
+        # Combine encoded and scaled data
+        transformed_data = pd.concat([pd.DataFrame(encoded_input), pd.DataFrame(scaled_input)], axis=1)
+
+        # Prediction
+        prediction = model.predict(transformed_data)
+        prediction_prob = model.predict_proba(transformed_data)[:, 1]
+
+        st.subheader("📝 Data Input By User")
+        st.dataframe(input_data)
+
+        st.subheader("📊 Probability Prediction")
+        st.write(f"Probability that the booking canceled: {prediction_prob[0]:.4f}")
+        st.write(f"Probability that the booking not canceled {1 - prediction_prob[0]:.4f}")
+
+        fig, ax = plt.subplots(figsize=(6, 4))
+        colors = ['#FF6B6B', '#4CAF50']
+        labels = ['Canceled', 'Not Canceled']
+        probs = [prediction_prob[0], 1 - prediction_prob[0]]
+
+        bars = ax.bar(labels, probs, color=colors)
+        ax.set_ylim(0, 1)
+        ax.set_title("Probability of Booking Outcome")
+        ax.set_ylabel("Probability")
+        ax.bar_label(bars, fmt='%.2f', padding=3)
+        st.pyplot(fig)
+
+        st.markdown("### 🧠 Feature Contribution to the Prediction")
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(transformed_data)
+
+        shap_df = pd.DataFrame({
+            'Feature': transformed_data.columns,
+            'SHAP Value': shap_values[0]
+        }).sort_values(by='SHAP Value', key=abs, ascending=False)
+
+        fig2, ax2 = plt.subplots(figsize=(8, 5))
+        sns.barplot(x='SHAP Value', y='Feature', data=shap_df, palette="coolwarm", ax=ax2)
+        ax2.set_title("Feature Impact on This Prediction")
+        st.pyplot(fig2)
+
+        hasil = "✅ Booking Not Canceled!" if prediction[0] == 1 else "❌ Booking Canceled!"
+        st.markdown("---")
+        st.subheader("🎯 Prediction Result : ")
+        if prediction[0] == 1:
+            st.success(hasil)
+        else:
+            st.error(hasil)
 
