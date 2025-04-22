@@ -81,15 +81,22 @@ if submit:
         ])
 
         # Apply encoder and scaler to the input data
+       # Make sure categorical columns are correctly selected for encoding
         categorical_columns = ['meal_plan_choice', 'market_choice', 'room_type_choice']
-        encoded_input = encoder.transform(input_data[categorical_columns])
-
-        # Drop the categorical columns for scaling
-        scaled_input = scaler.transform(input_data.drop(categorical_columns, axis=1))
-
-        # Combine encoded and scaled data
-        transformed_data = pd.concat([pd.DataFrame(encoded_input), pd.DataFrame(scaled_input)], axis=1)
-
+        
+        # Verify if all the categorical columns are available in input_data
+        missing_columns = [col for col in categorical_columns if col not in input_data.columns]
+        if missing_columns:
+            st.error(f"Missing columns in input data: {', '.join(missing_columns)}")
+        else:
+            # Apply encoder to the input data
+            encoded_input = encoder.transform(input_data[categorical_columns])
+            
+            # Proceed with the rest of the transformations as before
+            scaled_input = scaler.transform(input_data.drop(categorical_columns, axis=1))
+            
+            # Combine encoded and scaled data
+            transformed_data = pd.concat([pd.DataFrame(encoded_input), pd.DataFrame(scaled_input)], axis=1)
         # Prediction
         prediction = model.predict(transformed_data)
         prediction_prob = model.predict_proba(transformed_data)[:, 1]
