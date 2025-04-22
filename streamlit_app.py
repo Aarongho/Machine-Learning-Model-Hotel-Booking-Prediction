@@ -92,7 +92,8 @@ if submit:
         categorical_columns = ['meal_plan_choice', 'room_type_choice', 'market_choice']
         
         # Perform one-hot encoding on categorical columns
-        encoded_input = encoder.transform(input_data[categorical_columns])
+        input_data = input_data[categorical_columns]  # Reorder the columns
+        encoded_input = encoder.transform(input_data)
         
         # Convert the one-hot encoded data back to a DataFrame for easier manipulation
         encoded_df = pd.DataFrame(encoded_input, columns=encoder.get_feature_names_out(categorical_columns))
