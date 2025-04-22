@@ -81,25 +81,37 @@ if submit:
         ])
 
         # Apply encoder and scaler to the input data
-       # Make sure categorical columns are correctly selected for encoding
-        categorical_columns = ['meal_plan_choice', 'market_choice', 'room_type_choice']
+       # Assuming you have loaded the encoder and scaler as encoder.pkl and scaler.pkl
+        with open('encoder.pkl', 'rb') as file:
+            encoder = pickle.load(file)
         
-        # Verify if all the categorical columns are available in input_data
-        missing_columns = [col for col in categorical_columns if col not in input_data.columns]
-        if missing_columns:
-            st.error(f"Missing columns in input data: {', '.join(missing_columns)}")
-        else:
-            # Apply encoder to the input data
-            encoded_input = encoder.transform(input_data[categorical_columns])
-            
-            # Proceed with the rest of the transformations as before
-            scaled_input = scaler.transform(input_data.drop(categorical_columns, axis=1))
-            
-            # Combine encoded and scaled data
-            transformed_data = pd.concat([pd.DataFrame(encoded_input), pd.DataFrame(scaled_input)], axis=1)
-        # Prediction
-        prediction = model.predict(transformed_data)
-        prediction_prob = model.predict_proba(transformed_data)[:, 1]
+        with open('scaler.pkl', 'rb') as file:
+            scaler = pickle.load(file)
+        
+        # Define the categorical columns
+        categorical_columns = ['meal_plan_choice', 'room_type_choice', 'market_choice']
+        
+        # Perform one-hot encoding on categorical columns
+        encoded_input = encoder.transform(input_data[categorical_columns])
+        
+        # Convert the one-hot encoded data back to a DataFrame for easier manipulation
+        encoded_df = pd.DataFrame(encoded_input, columns=encoder.get_feature_names_out(categorical_columns))
+        
+        # Now we concatenate the encoded data with the other non-categorical columns
+        non_categorical_columns = input_data.drop(columns=categorical_columns)
+        final_input_data = pd.concat([non_categorical_columns, encoded_df], axis=1)
+        
+        # Now scale the numeric columns if needed
+        final_input_data_scaled = scaler.transform(final_input_data)
+        
+        # Pass the scaled data to the model for prediction
+        prediction = model.predict(final_input_data_scaled)
+        prediction_prob = model.predict_proba(final_input_data_scaled)[:, 1]
+        
+        # Output the prediction
+        st.write(f"Probability that the booking is canceled: {prediction_prob[0]:.4f}")
+        st.write(f"Probability that the booking is not canceled: {1 - prediction_prob[0]:.4f}")
+
 
         st.subheader("📝 Data Input By User")
         st.dataframe(input_data)
