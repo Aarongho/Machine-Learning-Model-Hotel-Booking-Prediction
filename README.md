@@ -1,2 +1,2 @@
-# Hotel-Booking-Prediction
+# Machine Learning Deployment For Hotel-Booking-Prediction
 A Code To Deploy Model for predicting status of booking hotel
