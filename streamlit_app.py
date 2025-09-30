@@ -147,18 +147,21 @@ if submit:
 
         # SHAP
         st.markdown("### 🧠 Feature Contribution to the Prediction")
-        explainer = shap.TreeExplainer(model)
-        shap_values = explainer(input_data)
+        try:
+            explainer = shap.TreeExplainer(model)
+            shap_values = explainer(input_data)
 
-        shap_df = pd.DataFrame({
-            'Feature': input_data.columns,
-            'SHAP Value': shap_values.values[0]
-        }).sort_values(by='SHAP Value', key=abs, ascending=False)
+            shap_df = pd.DataFrame({
+                'Feature': input_data.columns,
+                'SHAP Value': shap_values.values[0]
+            }).sort_values(by='SHAP Value', key=abs, ascending=False)
 
-        fig2, ax2 = plt.subplots(figsize=(8, 5))
-        sns.barplot(x='SHAP Value', y='Feature', data=shap_df, palette="coolwarm", ax=ax2)
-        ax2.set_title("Feature Impact on This Prediction")
-        st.pyplot(fig2)
+            fig2, ax2 = plt.subplots(figsize=(8, 5))
+            sns.barplot(x='SHAP Value', y='Feature', data=shap_df, palette="coolwarm", ax=ax2)
+            ax2.set_title("Feature Impact on This Prediction")
+            st.pyplot(fig2)
+        except Exception as e:
+            st.warning("⚠️ Gagal menghitung SHAP values. Error: " + str(e))
 
         # Final Result
         hasil = "✅ Booking Not Canceled!" if prediction[0] == 1 else "❌ Booking Canceled!"
