@@ -113,6 +113,14 @@ if submit:
             'avg_price_per_room', 'no_of_special_requests'
         ])
 
+        # Align features with model
+        expected_features = model.get_booster().feature_names
+        input_data = input_data.reindex(columns=expected_features, fill_value=0)
+
+        # Debug - tampilkan kolom biar bisa dibandingkan
+        st.write("DEBUG - Model expects:", expected_features)
+        st.write("DEBUG - Input data columns:", input_data.columns.tolist())
+
         # Predict
         prediction = model.predict(input_data)
         prediction_prob = model.predict_proba(input_data)[:, 1]
